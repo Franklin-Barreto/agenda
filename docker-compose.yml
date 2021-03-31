@@ -1,0 +1,43 @@
+version: '3.9'
+services:
+  db:
+   build:
+    context: .
+    dockerfile: ./agenda-db.dockerfile
+   volumes:
+      - ../data/:/var/lib/mysql
+   container_name: db
+   environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_DATABASE=agenda
+      - MYSQL_USER=user_agenda
+      - MYSQL_PASSWORD=agenda@123
+   healthcheck:
+    test: ["CMD", 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD' ]
+    start_period: 60s
+   ports:
+      - 3306:3306
+   networks: 
+     - agenda-network  
+  web:
+    build:
+     context: . 
+     dockerfile: ./agenda-api.dockerfile   
+    container_name: agenda-api
+    restart: on-failure    
+    ports:
+      - 8080:8080
+    environment: 
+      - DATABASE_HOST=db  
+      - DATABASE_USER=user_agenda
+      - DATABASE_NAME=agenda
+      - DATABASE_PORT=3306
+    networks: 
+      - agenda-network  
+    depends_on:
+     db:
+      condition: service_healthy   
+networks: 
+  agenda-network:
+    driver: bridge
